@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather App</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+   
+    <div class="weather-background" id="weather-background">
+
+    </div>
+    <h2 class = "city">New York</h2>
+    <div class="location">
+        <img src="navigation.png">
+        </div>
+    <div class="search">
+        <input type="text" placeholder="Enter city name" spellcheck="false">
+        <button><img src="search.png" alt="Search"></button>
+    </div>
+
+    <div class="card">
+        <div class="error">
+            <p>Invalid City Name!</p>
+        </div>
+        <div class="weather">
+            <img src="rain.png" class="weather-icon" alt="Weather Icon">
+        
+            <h1 class="temp">22°F</h1>
+            <div class="details">
+                <div class="col">
+                    <img src="humid.png" alt="Humidity Icon">
+                    <div>
+                        <p class="humid">50%</p>
+                        <p class="humidity">Humidity</p>
+                    </div>
+                </div>
+                <div class="col">
+                    <img src="wind.png" alt="Wind Icon">
+                    <div>
+                        <p class="wind">15 km/h</p>
+                        <p class="wind-speed">Wind Speed</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="unit-toggle">
+            <button class="celsius">°F</button>
+            <button class="fahrenheit">°C</button>
+        </div>
+    </div>
+
+    <div class="card2">
+        <container class="card2-contents">
+        <div class="date-time"> 
+            <p>Loading...</p>
+        </div>    
+        
+        <div class="weather-condition">
+            <p>Partly Cloudy</p>
+        </div>
+        <div class="sun-times">
+            <p>Sunrise: 06:30 AM</p>
+            <p>Sunset: 07:45 PM</p>
+        </div>
+        <div class="temperature-range">
+            <p>High: 80°F</p>
+            <p>Low: 65°F</p>
+        </div>
+
+        </container>
+    </div>
+    <script>
+        let isCelsius = true;
+        const apiKey = "bb3c3d693f970cbab806d73f420843cf";
+        const apiUrl = "https://api.openweathermap.org/data/2.5/weather?units=imperial&q=";
+
+        const searchBox = document.querySelector(".search input");
+        const searchBtn = document.querySelector(".search button");
+        const weatherIcon = document.querySelector(".weather-icon");
+        const tempElement = document.querySelector(".temp");
+        const humidityElement = document.querySelector(".humid"); // Fixed class name
+        const unitToggle = document.querySelector(".unit-toggle");
+        const errorElement = document.querySelector(".error"); // Added reference to error element
+
+        const weatherBackground = document.getElementById("weather-background");
+        const initialBackgroundImageUrl = "background.jpg";
+        weatherBackground.style.backgroundImage = `url(${initialBackgroundImageUrl})`;
+
+        // an array of background images to preload
+
+        const backgroundImageToPreload = [
+            "back_humid.jpg",
+            "back_cloud.jpg",
+            "back_clear.jpg",
+            "back_rain.jpg",
+            "back_drizzle.jpg",
+            "back_mist.jpg",
+            "background2.jpg"
+        ]
+
+        // Create an array to store preloaded Image objects
+        const preloadedImages = [];
+
+        // function to preload images
+        function preloadImages() {
+            for(const imageUrl of backgroundImageToPreload) {
+                const image = new Image();
+                image.src = imageUrl;
+                
+                preloadedImages.push(image);
+            }
+        }
+        
+        // calling the function to start preloading
+
+        preloadImages();
+
+        async function checkWeather(city) {
+            try {
+                const response = await fetch(`${apiUrl}${city}&units=${isCelsius ? "metric" : "imperial"}&appid=${apiKey}`);
+
+                if (response.status === 404) {
+                    errorElement.style.display = "block"; // Show error message
+                    document.querySelector(".weather").style.display = "none";
+                } else {
+                    errorElement.style.display = "none"; // Hide error message
+                    const data = await response.json();
+                    //update the city name
+                    document.querySelector(".city").innerHTML = data.name;
+                    //update the temprature
+                    const temperatureValue = isCelsius ? data.main.temp : (5/9)*(data.main.temp - 32);
+                    tempElement.innerHTML = `${Math.round(temperatureValue)}${isCelsius ? "°F" : "°C"}`;
+                    // to update the weather condition
+                    document.querySelector(".weather-condition p").textContent = data.weather[0].description;
+                    // Update sunrise and sunset times
+            const sunrise = new Date(data.sys.sunrise * 1000);
+            const sunset = new Date(data.sys.sunset * 1000);
+            document.querySelector(".sun-times p").textContent = `Sunrise: ${sunrise.toLocaleTimeString()}`;
+            document.querySelector(".sun-times p").textContent = `Sunset: ${sunset.toLocaleTimeString()}`;
+
+            // Update high and low temperatures
+            document.querySelector(".temperature-range p").textContent = `High: ${data.main.temp_max}${isCelsius ? "°C" : "°F"}`;
+            document.querySelector(".temperature-range p").textContent = `Low: ${data.main.temp_min}${isCelsius ? "°C" : "°F"}`;
+
+            const windValue = isCelsius ? data.wind.speed / 1.609344 : data.wind.speed;
+            humidityElement.innerHTML = data.main.humidity + "%";
+            document.querySelector(".wind").innerHTML = windValue.toFixed(1) + (isCelsius ? " mph" : " km/h"); // toFixed(1) displays the value with one decimal point
+
+                    switch (data.weather[0].main) {
+                        case "Clouds":
+                            weatherIcon.src = "clouds.png";
+                            weatherBackground.style.backgroundImage = `url(back_cloud.jpg)`;
+                            break;
+                        case "Clear":
+                            weatherIcon.src = "clear.png";
+                            weatherBackground.style.backgroundImage = `url(back_clear.jpg)`;                          
+                            break;
+                        case "Rain":
+                            weatherIcon.src = "rain.png"; 
+                            weatherBackground.style.backgroundImage = `url(back_rain.jpg)`;
+                            break;
+                        case "Drizzle":
+                            weatherIcon.src = "drizzle.png";
+                            weatherBackground.style.backgroundImage = `url(back_drizzle.jpg)`;
+                            break;
+                        case "Mist":
+                            weatherIcon.src = "mist.png";
+                            weatherBackground.style.backgroundImage = `url(back_mist.jpg)`;
+                            break;
+                        default:
+                            weatherIcon.src = "unknown.png"; 
+                            weatherBackground.style.backgroundImage = `url(background.jpg)`;
+                            break;
+                    }
+
+                    // Dynamically set font color based on background brightness
+function setFontColorBasedOnBackground() {
+    const bgColor = getComputedStyle(weatherBackground).backgroundColor;
+    const brightness = getBrightness(bgColor);
+
+    const cityElement = document.querySelector(".city");
+    if (brightness > 128) {
+        cityElement.style.color = "black"; // Light background, set font color to black
+    } else {
+        cityElement.style.color = "white"; // Dark background, set font color to white
+    }
+}
+
+// Function to calculate brightness based on RGB values
+function getBrightness(rgbColor) {
+    const [r, g, b] = rgbColor.match(/\d+/g).map(Number);
+    return (r * 299 + g * 587 + b * 114) / 1000;
+}
+
+// Call the function initially and whenever the background changes
+setFontColorBasedOnBackground();
+
+
+                    document.querySelector(".weather").style.display = "block";
+                }
+            } catch (error) {
+                console.error("An error occurred:", error);
+            }
+        }
+
+        unitToggle.addEventListener("click", (event) => {
+            const clickedButton = event.target;
+            if (clickedButton.classList.contains("celsius")) {
+                isCelsius = true;
+            } else if (clickedButton.classList.contains("fahrenheit")) {
+                isCelsius = false;
+            }
+            checkWeather(searchBox.value);
+        });
+
+        searchBtn.addEventListener("click", () => {
+            checkWeather(searchBox.value);
+        });
+
+        checkWeather("New York");
+
+// Function to update the date and time in the "card2" section
+// Function to update the date and time in the "date-time" section of "card2"
+function updateDateTime() {
+    const dateTimeElement = document.querySelector(".date-time p");
+
+    // Get the current date and time
+    const now = new Date();
+    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric', timeZoneName: 'short' };
+    const formattedDateTime = now.toLocaleDateString(undefined, options);
+
+    // Update the "date-time" element with the current date and time
+    dateTimeElement.textContent = formattedDateTime;
+}
+
+// Call the updateDateTime function initially and then every second to keep the time updated
+updateDateTime();
+setInterval(updateDateTime, 1000);
+
+
+    </script>
+</body>
+</html>
+
